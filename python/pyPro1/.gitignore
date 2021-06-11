@@ -1,0 +1,5 @@
+venv3.9.1
+*.pyc
+.git
+*.iml
+.idea
