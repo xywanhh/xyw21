@@ -485,3 +485,667 @@ print(sum)
 
 
 ```
+
+# 3 函数
+
+函数就是最基本的一种代码抽象的方式。
+
+def 关键字
+
+## 3.1 函数调用
+
+有很多内置函数
+
+```
+>>> abs(100)
+100
+>>> abs(-20)
+20
+>>> abs(12.34)
+12.34
+
+>>> max(1, 2)
+2
+>>> max(2, 3, 1, -5)
+3
+
+数据类型转换函数
+>>> int('123')
+123
+>>> int(12.34)
+12
+>>> float('12.34')
+12.34
+>>> str(1.23)
+'1.23'
+>>> str(100)
+'100'
+>>> bool(1)
+True
+>>> bool('')
+False
+
+函数名其实就是指向一个函数对象的引用，完全可以把函数名赋给一个变量，相当于给这个函数起了一个“别名”
+>>> a = abs # 变量a指向abs函数
+>>> a(-1) # 所以也可以通过a调用abs函数
+1
+```
+
+## 3.2 函数定义
+
+```
+return None可以简写为return
+
+pass可以用来作为占位符，让代码能运行起来。
+
+数据类型检查可以用内置函数isinstance()实现
+def my_abs(x):
+    if not isinstance(x, (int, float)):
+        raise TypeError('bad operand type')
+    if x >= 0:
+        return x
+    else:
+        return -x
+        
+多值返回
+Python的函数返回多值其实就是返回一个tuple，但写起来更方便。
+```
+
+
+
+## 3.3 函数参数
+
+默认参数、可变参数和关键字参数
+
+```
+1. 位置参数
+def power(x, n):
+    s = 1
+    while n > 0:
+        n = n - 1
+        s = s * x
+    return s
+
+传入的两个值按照位置顺序依次赋给参数x和n。
+
+2. 默认参数
+可以扩展函数的功能。
+
+def power(x, n=2):
+    s = 1
+    while n > 0:
+        n = n - 1
+        s = s * x
+    return s
+
+注意：
+必选参数在前，默认参数在后，否则Python的解释器会报错
+有多个默认参数时，调用的时候，既可以按顺序提供默认参数，也可以不按顺序提供部分默认参数。当不按顺序提供部分默认参数时，需要把参数名写上。
+
+默认参数有个最大的坑：
+def add_end(L=[]):
+    L.append('END')
+    return L
+多次调用
+>>> add_end()
+['END', 'END']
+>>> add_end()
+['END', 'END', 'END']
+Python函数在定义的时候，默认参数L的值就被计算出来了，即[]，因为默认参数L也是一个变量，它指向对象[]，每次调用该函数，如果改变了L的内容，则下次调用时，默认参数的内容就变了，不再是函数定义时的[]了。
+
+默认参数必须指向不变对象！
+
+修改：
+def add_end(L=None):
+    if L is None:
+        L = []
+    L.append('END')
+    return L
+
+现在，无论调用多少次，都不会有问题：
+>>> add_end()
+['END']
+>>> add_end()
+['END']
+
+3. 可变参数
+在参数前面加了一个*号。
+可变参数允许你传入0个或任意个参数，这些可变参数在函数调用时自动组装为一个tuple。
+可以扩展函数的功能。
+
+def calc(numbers):
+    sum = 0
+    for n in numbers:
+        sum = sum + n * n
+    return sum
+调用的时候，需要先组装出一个list或tuple：
+>>> calc([1, 2, 3])
+14
+>>> calc((1, 3, 5, 7))
+84    
+
+利用可变参数，调用函数的方式可以简化成这样：
+def calc(*numbers):
+    sum = 0
+    for n in numbers:
+        sum = sum + n * n
+    return sum
+>>> calc(1, 3, 5, 7)
+84
+调用该函数时，可以传入任意个参数，包括0个参数
+
+如果已经有一个list或者tuple，要调用一个可变参数怎么办？可以这样做：
+>>> nums = [1, 2, 3]
+>>> calc(nums[0], nums[1], nums[2])
+14
+或者
+>>> nums = [1, 2, 3]
+>>> calc(*nums)
+14
+Python允许你在list或tuple前面加一个*号，把list或tuple的元素变成可变参数传进去
+*nums表示把nums这个list的所有元素作为可变参数传进去。
+
+4. 关键字参数
+允许传入0个或任意个含参数名的参数，这些关键字参数在函数内部自动组装为一个dict。
+可以扩展函数的功能。
+
+def person(name, age, **kw):
+    print('name:', name, 'age:', age, 'other:', kw)
+>>> person('Michael', 30)
+name: Michael age: 30 other: {}
+>>> person('Bob', 35, city='Beijing')
+name: Bob age: 35 other: {'city': 'Beijing'}
+>>> person('Adam', 45, gender='M', job='Engineer')
+name: Adam age: 45 other: {'gender': 'M', 'job': 'Engineer'}
+
+和可变参数类似，也可以先组装出一个dict，然后，把该dict转换为关键字参数传进去：
+>>> extra = {'city': 'Beijing', 'job': 'Engineer'}
+>>> person('Jack', 24, city=extra['city'], job=extra['job'])
+name: Jack age: 24 other: {'city': 'Beijing', 'job': 'Engineer'}
+
+当然，上面复杂的调用可以用简化的写法：
+>>> extra = {'city': 'Beijing', 'job': 'Engineer'}
+>>> person('Jack', 24, **extra)
+name: Jack age: 24 other: {'city': 'Beijing', 'job': 'Engineer'}
+**extra表示把extra这个dict的所有key-value用关键字参数传入到函数的**kw参数，kw将获得一个dict。
+注意kw获得的dict是extra的一份拷贝，对kw的改动不会影响到函数外的extra。
+
+5. 命名关键字参数
+对于关键字参数，函数的调用者可以传入任意不受限制的关键字参数。至于到底传入了哪些，就需要在函数内部通过kw检查。
+
+def person(name, age, **kw):
+    if 'city' in kw:
+        # 有city参数
+        pass
+    if 'job' in kw:
+        # 有job参数
+        pass
+    print('name:', name, 'age:', age, 'other:', kw)
+    
+但是调用者仍可以传入不受限制的关键字参数：
+>>> person('Jack', 24, city='Beijing', addr='Chaoyang', zipcode=123456)
+
+如果要限制关键字参数的名字，就可以用命名关键字参数，例如，只接收city和job作为关键字参数。这种方式定义的函数如下：
+def person(name, age, *, city, job):
+    print(name, age, city, job)
+
+和关键字参数**kw不同，命名关键字参数需要一个特殊分隔符*，*后面的参数被视为命名关键字参数。    
+调用方式如下：
+>>> person('Jack', 24, city='Beijing', job='Engineer')
+Jack 24 Beijing Engineer
+
+如果函数定义中已经有了一个可变参数，后面跟着的命名关键字参数就不再需要一个特殊分隔符*了：
+def person(name, age, *args, city, job):
+    print(name, age, args, city, job)
+    
+命名关键字参数必须传入参数名，这和位置参数不同。如果没有传入参数名，调用将报错：
+>>> person('Jack', 24, 'Beijing', 'Engineer')
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+TypeError: person() takes 2 positional arguments but 4 were given
+
+命名关键字参数可以有缺省值，从而简化调用：
+def person(name, age, *, city='Beijing', job):
+    print(name, age, city, job)
+由于命名关键字参数city具有默认值，调用时，可不传入city参数：
+>>> person('Jack', 24, job='Engineer')
+Jack 24 Beijing Engineer
+
+使用命名关键字参数时，要特别注意，如果没有可变参数，就必须加一个*作为特殊分隔符。如果缺少*，Python解释器将无法识别位置参数和命名关键字参数：
+def person(name, age, city, job):
+    # 缺少 *，city和job被视为位置参数
+    pass
+
+6. 参数组合
+在Python中定义函数，可以用必选参数、默认参数、可变参数、关键字参数和命名关键字参数，这5种参数都可以组合使用。但是请注意，参数定义的顺序必须是：必选参数、默认参数、可变参数、命名关键字参数和关键字参数。
+
+def f1(a, b, c=0, *args, **kw):
+    print('a =', a, 'b =', b, 'c =', c, 'args =', args, 'kw =', kw)
+
+def f2(a, b, c=0, *, d, **kw):
+    print('a =', a, 'b =', b, 'c =', c, 'd =', d, 'kw =', kw)
+    
+>>> f1(1, 2)
+a = 1 b = 2 c = 0 args = () kw = {}
+>>> f1(1, 2, c=3)
+a = 1 b = 2 c = 3 args = () kw = {}
+>>> f1(1, 2, 3, 'a', 'b')
+a = 1 b = 2 c = 3 args = ('a', 'b') kw = {}
+>>> f1(1, 2, 3, 'a', 'b', x=99)
+a = 1 b = 2 c = 3 args = ('a', 'b') kw = {'x': 99}
+>>> f2(1, 2, d=99, ext=None)
+a = 1 b = 2 c = 0 d = 99 kw = {'ext': None}    
+
+最神奇的是通过一个tuple和dict，也可以调用上述函数：
+>>> args = (1, 2, 3, 4)
+>>> kw = {'d': 99, 'x': '#'}
+>>> f1(*args, **kw)
+a = 1 b = 2 c = 3 args = (4,) kw = {'d': 99, 'x': '#'}
+>>> args = (1, 2, 3)
+>>> kw = {'d': 88, 'x': '#'}
+>>> f2(*args, **kw)
+a = 1 b = 2 c = 3 d = 88 kw = {'x': '#'}
+
+所以，对于任意函数，都可以通过类似func(*args, **kw)的形式调用它，无论它的参数是如何定义的。
+
+注意：
+虽然可以组合多达5种参数，但不要同时使用太多的组合，否则函数接口的可理解性很差。
+
+```
+
+小结：
+
+```
+默认参数一定要用不可变对象，如果是可变对象，程序运行时会有逻辑错误！
+
+要注意定义可变参数和关键字参数的语法：
+*args是可变参数，args接收的是一个tuple；
+**kw是关键字参数，kw接收的是一个dict。
+
+调用函数时如何传入可变参数和关键字参数的语法：
+可变参数既可以直接传入：func(1, 2, 3)，又可以先组装list或tuple，再通过*args传入：func(*(1, 2, 3))；
+关键字参数既可以直接传入：func(a=1, b=2)，又可以先组装dict，再通过**kw传入：func(**{'a': 1, 'b': 2})。
+
+使用*args和**kw是Python的习惯写法，当然也可以用其他参数名，但最好使用习惯用法。
+
+命名的关键字参数是为了限制调用者可以传入的参数名，同时可以提供默认值。
+
+定义命名的关键字参数在没有可变参数的情况下不要忘了写分隔符*，否则定义的将是位置参数。
+
+```
+
+## 3.4 递归
+
+理论上，所有的递归函数都可以写成循环的方式，但循环的逻辑不如递归清晰。
+
+使用递归函数需要注意防止栈溢出。
+
+
+
+# 4. 高级特性
+
+请始终牢记，代码越少，开发效率越高。
+
+
+
+## 4.1 切片
+
+```
+L[0:3]表示，从索引0开始取，直到索引3为止，但不包括索引3。即索引0，1，2，正好是3个元素。
+
+如果第一个索引是0，还可以省略：
+>>> L[:3]
+
+同样支持倒数切片：
+>>> L[-2:]
+倒数第一个元素的索引是-1。
+
+>>> L = list(range(100))
+>>> L
+[0, 1, 2, 3, ..., 99]
+前10个数：
+>>> L[:10]
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+后10个数：
+>>> L[-10:]
+[90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
+
+只写[:]就可以原样复制一个list：
+>>> L[:]
+[0, 1, 2, 3, ..., 99]
+
+tuple也可以用切片操作，只是操作的结果仍是tuple：
+>>> (0, 1, 2, 3, 4, 5)[:3]
+(0, 1, 2)
+
+字符串也可以用切片操作，只是操作结果仍是字符串：
+>>> 'ABCDEFG'[:3]
+'ABC'
+Python没有针对字符串的截取函数，只需要切片一个操作就可以完成
+
+
+```
+
+
+
+## 4.2 迭代
+
+```
+在Python中，迭代是通过for ... in来完成的
+
+Python的for循环不仅可以用在list或tuple上，还可以作用在其他可迭代对象上。
+
+只要是可迭代对象，无论有无下标，都可以迭代
+>>> d = {'a': 1, 'b': 2, 'c': 3}
+>>> for key in d:
+...     print(key)
+
+默认情况下，dict迭代的是key。如果要迭代value，可以用for value in d.values()，如果要同时迭代key和value，可以用for k, v in d.items()。
+
+字符串也是可迭代对象:
+>>> for ch in 'ABC':
+...     print(ch)
+
+判断一个对象是可迭代对象呢？方法是通过collections.abc模块的Iterable类型判断：
+>>> from collections.abc import Iterable
+>>> isinstance('abc', Iterable) # str是否可迭代
+True
+>>> isinstance([1,2,3], Iterable) # list是否可迭代
+True
+>>> isinstance(123, Iterable) # 整数是否可迭代
+False
+
+Python内置的enumerate函数可以把一个list变成索引-元素对，这样就可以在for循环中同时迭代索引和元素本身：
+>>> for i, value in enumerate(['A', 'B', 'C']):
+...     print(i, value)
+...
+0 A
+1 B
+2 C
+
+上面的for循环里，同时引用了两个变量，在Python里是很常见的，比如下面的代码：
+>>> for x, y in [(1, 1), (2, 4), (3, 9)]:
+...     print(x, y)
+...
+1 1
+2 4
+3 9
+
+
+```
+
+
+
+## 4.3 列表生成式
+
+列表生成式即List Comprehensions，是Python内置的非常简单却强大的可以用来创建list的生成式。
+
+运用列表生成式，可以快速生成list，可以通过一个list推导出另一个list，而代码却十分简洁。
+
+
+
+```
+>>> list(range(1, 11))
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+>>> L = []
+>>> for x in range(1, 11):
+...    L.append(x * x)
+>>> [x * x for x in range(1, 11)]
+[1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+
+>>> [x * x for x in range(1, 11) if x % 2 == 0]
+[4, 16, 36, 64, 100]
+
+生成全排列：
+>>> [m + n for m in 'ABC' for n in 'XYZ']
+['AX', 'AY', 'AZ', 'BX', 'BY', 'BZ', 'CX', 'CY', 'CZ']
+
+列出当前目录下的所有文件和目录名，可以通过一行代码实现：
+>>> import os
+>>> [d for d in os.listdir('.')]
+
+for循环其实可以同时使用两个甚至多个变量，比如dict的items()可以同时迭代key和value：
+>>> d = {'x': 'A', 'y': 'B', 'z': 'C' }
+>>> for k, v in d.items():
+...     print(k, '=', v)
+
+可以简写为：
+>>> d = {'x': 'A', 'y': 'B', 'z': 'C' }
+>>> [k + '=' + v for k, v in d.items()]
+['y=B', 'x=A', 'z=C']
+
+把一个list中所有的字符串变成小写：
+>>> L = ['Hello', 'World', 'IBM', 'Apple']
+>>> [s.lower() for s in L]
+['hello', 'world', 'ibm', 'apple']
+
+总结：
+在一个列表生成式中，for前面的if ... else是表达式，而for后面的if是过滤条件，不能带else。
+
+# -*- coding: utf-8 -*-
+L1 = ['Hello', 'World', 18, 'Apple', None]
+L2 = [x.lower() if isinstance(x, str) else x for x in L1]
+L3 = [x.lower() for x in L1 if isinstance(x, str)]
+```
+
+
+
+## 4.4 生成器
+
+```
+在Python中，这种一边循环一边计算的机制，称为生成器：generator。
+
+1. 第一种方法很简单，只要把一个列表生成式的[]改成()，就创建了一个generator：
+>>> L = [x * x for x in range(10)]
+>>> L
+[0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+>>> g = (x * x for x in range(10))
+>>> g
+<generator object <genexpr> at 0x1022ef630>
+
+可以通过next()函数获得generator的下一个返回值：
+>>> next(g)
+0
+>>> next(g)
+1
+>>> next(g)
+4
+>>> next(g)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration
+
+generator保存的是算法，每次调用next(g)，就计算出g的下一个元素的值，直到计算到最后一个元素，没有更多的元素时，抛出StopIteration的错误。
+
+也可以for循环调用
+>>> g = (x * x for x in range(10))
+>>> for n in g:
+...     print(n)
+通过for循环来迭代它，并且不需要关心StopIteration的错误。
+
+2. generator非常强大。如果推算的算法比较复杂，用类似列表生成式的for循环无法实现的时候，还可以用函数来实现。
+def fib(max):
+    n, a, b = 0, 0, 1
+    while n < max:
+        print(b)
+        a, b = b, a + b
+        n = n + 1
+    return 'done'
+注意，赋值语句：
+a, b = b, a + b
+相当于：
+t = (b, a + b) # t是一个tuple
+a = t[0]
+b = t[1]
+但不必显式写出临时变量t就可以赋值。    
+
+用生成器实现
+def fib(max):
+    n, a, b = 0, 0, 1
+    while n < max:
+        yield b
+        a, b = b, a + b
+        n = n + 1
+    return 'done'
+如果一个函数定义中包含yield关键字，那么这个函数就不再是一个普通函数，而是一个generator：
+>>> f = fib(6)
+>>> f
+<generator object fib at 0x104feaaa0>    
+
+generator和函数的执行流程不一样。函数是顺序执行，遇到return语句或者最后一行函数语句就返回。而变成generator的函数，在每次调用next()的时候执行，遇到yield语句返回，再次执行时从上次返回的yield语句处继续执行。
+
+def odd():
+    print('step 1')
+    yield 1
+    print('step 2')
+    yield(3)
+    print('step 3')
+    yield(5)
+>>> o = odd()
+>>> next(o)
+step 1
+1
+>>> next(o)
+step 2
+3
+>>> next(o)
+step 3
+5
+>>> next(o)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration    
+可以看到，odd不是普通函数，而是generator，在执行过程中，遇到yield就中断，下次又继续执行。执行3次yield后，已经没有yield可以执行了，所以，第4次调用next(o)就报错。
+
+把函数改成generator后，我们基本上从来不会用next()来获取下一个返回值，而是直接使用for循环来迭代
+
+用for循环调用generator时，发现拿不到generator的return语句的返回值。如果想要拿到返回值，必须捕获StopIteration错误，返回值包含在StopIteration的value中：
+>>> g = fib(6)
+>>> while True:
+...     try:
+...         x = next(g)
+...         print('g:', x)
+...     except StopIteration as e:
+...         print('Generator return value:', e.value)
+...         break
+
+
+用生成器输出杨辉三角
+         1
+         / \
+        1   1
+       / \ / \
+      1   2   1
+     / \ / \ / \
+    1   3   3   1
+   / \ / \ / \ / \
+  1   4   6   4   1
+ / \ / \ / \ / \ / \
+1   5   10  10  5   1
+
+def triangles():
+	L = [1]
+    while True:
+        yield L[:]
+        L.append(0)
+        L = [L[i]+L[i-1] for i in range(len(L))]
+
+
+小结:
+generator是非常强大的工具，在Python中，可以简单地把列表生成式改成generator，也可以通过函数实现复杂逻辑的generator。
+
+要理解generator的工作原理，它是在for循环的过程中不断计算出下一个元素，并在适当的条件结束for循环。对于函数改成的generator来说，遇到return语句或者执行到函数体最后一行语句，就是结束generator的指令，for循环随之结束。
+
+请注意区分普通函数和generator函数，普通函数调用直接返回结果：
+>>> r = abs(6)
+>>> r
+6
+generator函数的“调用”实际返回一个generator对象：
+>>> g = fib(6)
+>>> g
+<generator object fib at 0x1022ef948>
+```
+
+
+
+## 4.5 迭代器
+
+```
+可以直接作用于for循环的数据类型有以下几种：
+一类是集合数据类型，如list、tuple、dict、set、str等；
+一类是generator，包括生成器和带yield的generator function。
+这些可以直接作用于for循环的对象统称为可迭代对象：Iterable。
+
+可以使用isinstance()判断一个对象是否是Iterable对象：
+>>> from collections.abc import Iterable
+>>> isinstance([], Iterable)
+True
+>>> isinstance({}, Iterable)
+True
+>>> isinstance('abc', Iterable)
+True
+>>> isinstance((x for x in range(10)), Iterable)
+True
+>>> isinstance(100, Iterable)
+False
+
+而生成器不但可以作用于for循环，还可以被next()函数不断调用并返回下一个值，直到最后抛出StopIteration错误表示无法继续返回下一个值了。
+可以被next()函数调用并不断返回下一个值的对象称为迭代器：Iterator。
+
+可以使用isinstance()判断一个对象是否是Iterator对象：
+>>> from collections.abc import Iterator
+>>> isinstance((x for x in range(10)), Iterator)
+True
+>>> isinstance([], Iterator)
+False
+>>> isinstance({}, Iterator)
+False
+>>> isinstance('abc', Iterator)
+False
+生成器都是Iterator对象，但list、dict、str虽然是Iterable，却不是Iterator。
+
+把list、dict、str等Iterable变成Iterator可以使用iter()函数：
+>>> isinstance(iter([]), Iterator)
+True
+>>> isinstance(iter('abc'), Iterator)
+True
+
+为什么list、dict、str等数据类型不是Iterator？
+这是因为Python的Iterator对象表示的是一个数据流，Iterator对象可以被next()函数调用并不断返回下一个数据，直到没有数据时抛出StopIteration错误。可以把这个数据流看做是一个有序序列，但我们却不能提前知道序列的长度，只能不断通过next()函数实现按需计算下一个数据，所以Iterator的计算是惰性的，只有在需要返回下一个数据时它才会计算。
+
+Iterator甚至可以表示一个无限大的数据流，例如全体自然数。而使用list是永远不可能存储全体自然数的。
+
+小结：
+凡是可作用于for循环的对象都是Iterable类型；
+凡是可作用于next()函数的对象都是Iterator类型，它们表示一个惰性计算的序列；
+集合数据类型如list、dict、str等是Iterable但不是Iterator，不过可以通过iter()函数获得一个Iterator对象。
+
+Python的for循环本质上就是通过不断调用next()函数实现的，例如：
+for x in [1, 2, 3, 4, 5]:
+    pass
+实际上完全等价于：
+# 首先获得Iterator对象:
+it = iter([1, 2, 3, 4, 5])
+# 循环:
+while True:
+    try:
+        # 获得下一个值:
+        x = next(it)
+    except StopIteration:
+        # 遇到StopIteration就退出循环
+        break
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
