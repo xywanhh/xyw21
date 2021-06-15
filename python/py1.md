@@ -824,7 +824,28 @@ tuple也可以用切片操作，只是操作的结果仍是tuple：
 Python没有针对字符串的截取函数，只需要切片一个操作就可以完成
 
 
+
 ```
+
+
+
+### 4.1.1 [::-1]
+
+```
+b = a[i:j:s]
+i,j标识下标，s表示步数，缺省为1
+
+a[i:j:1]相当于a[i:j]
+
+当s<0时，i缺省时，默认为-1. 
+j缺省时，默认为-len(a)-1
+所以a[::-1]相当于 a[-1:-len(a)-1:-1]，也就是从最后一个元素到第一个元素复制一遍。
+
+s = [1, 2, 3]
+s = s[::-1]
+```
+
+
 
 
 
@@ -1136,6 +1157,538 @@ while True:
         # 遇到StopIteration就退出循环
         break
 ```
+
+# 5. 函数式编程
+
+函数就是面向过程的程序设计的基本单元。
+
+Functional Programming
+
+函数式编程的一个特点就是，允许把函数本身作为参数传入另一个函数，还允许返回一个函数！
+
+
+
+Python中，函数本身也可以赋值给变量，即：变量可以指向函数。
+
+## 5.1 高阶函数
+
+变量可以指向函数
+
+函数名也是变量，函数名其实就是指向函数的变量
+
+```
+>>> abs = 10
+>>> abs(-10)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+TypeError: 'int' object is not callable
+`abs`函数实际上是定义在`import builtins`模块中的，所以要让修改abs变量的指向在其它模块也生效，要用import builtins; builtins.abs = 10。
+```
+
+**一个函数就可以接收另一个函数作为参数，这种函数就称之为高阶函数。**
+
+```
+def add(x, y, f):
+    return f(x) + f(y)
+
+>>>print(add(-5, 6, abs))     
+```
+
+### 5.1.1 map/reduce
+
+Python内建了`map()`和`reduce()`函数
+
+http://research.google.com/archive/mapreduce.html
+
+`map()`函数接收两个参数，一个是函数，一个是`Iterable`，`map`将传入的函数依次作用到序列的每个元素，并把结果作为新的`Iterator`返回。
+
+```
+>>> def f(x):
+...     return x * x
+...
+>>> r = map(f, [1, 2, 3, 4, 5, 6, 7, 8, 9])
+>>> list(r)
+[1, 4, 9, 16, 25, 36, 49, 64, 81]
+
+把这个list所有数字转为字符串：
+>>> list(map(str, [1, 2, 3, 4, 5, 6, 7, 8, 9]))
+['1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+```
+
+`reduce`把一个函数作用在一个序列`[x1, x2, x3, ...]`上，这个函数必须接收两个参数，`reduce`把结果继续和序列的下一个元素做累积计算，其效果就是：
+
+```
+reduce(f, [x1, x2, x3, x4]) = f(f(f(x1, x2), x3), x4)
+
+对一个序列求和，就可以用reduce实现：
+>>> from functools import reduce
+>>> def add(x, y):
+...     return x + y
+...
+>>> reduce(add, [1, 3, 5, 7, 9])
+25
+当然求和运算可以直接用Python内建函数sum()，没必要动用reduce。
+
+如果要把序列[1, 3, 5, 7, 9]变换成整数13579，reduce就可以派上用场：
+>>> from functools import reduce
+>>> def fn(x, y):
+...     return x * 10 + y
+...
+>>> reduce(fn, [1, 3, 5, 7, 9])
+13579
+
+考虑到字符串str也是一个序列，配合map()，可以写出把str转换为int的函数：
+>>> from functools import reduce
+>>> def fn(x, y):
+...     return x * 10 + y
+...
+>>> def char2num(s):
+...     digits = {'0': 0, '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9}
+...     return digits[s]
+...
+>>> reduce(fn, map(char2num, '13579'))
+13579
+
+整理成一个str2int的函数就是：
+from functools import reduce
+DIGITS = {'0': 0, '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9}
+def str2int(s):
+    def fn(x, y):
+        return x * 10 + y
+    def char2num(s):
+        return DIGITS[s]
+    return reduce(fn, map(char2num, s))
+    
+还可以用lambda函数进一步简化成：
+from functools import reduce
+DIGITS = {'0': 0, '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9}
+def char2num(s):
+    return DIGITS[s]
+def str2int(s):
+    return reduce(lambda x, y: x * 10 + y, map(char2num, s))
+    
+在Python数学运算中*代表乘法，**为指数运算
+
+示例：
+from functools import reduce
+if __name__ == '__main__':
+    DIGITS = {'0': 0, '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9}
+
+    def mul(L):
+        def f1(x, y):
+            return x * y
+        return reduce(f1, L)
+
+    def mul1(L):
+        return reduce(lambda x,y:x*y, L)
+
+    def c1(name):
+        def f1(s):
+            return s[0:1].upper() + s[1:].lower()
+        return map(f1, name)
+
+    # 把字符串'123.456'转换成浮点数123.456
+    def c2(s):
+        s = s.split('.')
+        def char2num(s):
+            return DIGITS[s]
+        return reduce(lambda x,y:x*10+y, map(char2num, s[0])) \
+               + reduce(lambda x,y:x*10+y, map(char2num, s[1]))*0.1**(len(s[1]))
+
+    print(mul([3, 5, 7, 9]))
+    print(mul1([3, 5, 7, 9]))
+    print(list(c1(['adam', 'LISA', 'barT'])))
+    print(c2('123.456'))
+```
+
+
+
+### 5.1.2 filter
+
+内建的`filter()`函数用于过滤序列。
+
+和`map()`类似，`filter()`也接收一个函数和一个序列。和`map()`不同的是，`filter()`把传入的函数依次作用于每个元素，然后根据返回值是`True`还是`False`决定保留还是丢弃该元素。
+
+`filter()`的作用是从一个序列中筛出符合条件的元素。由于`filter()`使用了惰性计算，所以只有在取`filter()`结果的时候，才会真正筛选并每次返回下一个筛出的元素。
+
+```
+def is_odd(n):
+    return n % 2 == 1
+list(filter(is_odd, [1, 2, 4, 5, 6, 9, 10, 15]))
+# 结果: [1, 5, 9, 15]
+
+def not_empty(s):
+    return s and s.strip()
+list(filter(not_empty, ['A', '', 'B', None, 'C', '  ']))
+# 结果: ['A', 'B', 'C']
+
+注意到filter()函数返回的是一个Iterator，也就是一个惰性序列，所以要强迫filter()完成计算结果，需要用list()函数获得所有结果并返回list。
+
+
+用filter求素数
+计算素数的一个方法是埃氏筛法，它的算法理解起来非常简单：
+首先，列出从2开始的所有自然数，构造一个序列：
+2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, ...
+取序列的第一个数2，它一定是素数，然后用2把序列的2的倍数筛掉：
+3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, ...
+取新序列的第一个数3，它一定是素数，然后用3把序列的3的倍数筛掉：
+5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, ...
+取新序列的第一个数5，然后用5把序列的5的倍数筛掉：
+7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, ...
+不断筛下去，就可以得到所有的素数。
+用Python来实现这个算法，可以先构造一个从3开始的奇数序列：
+
+	
+```
+
+
+
+### 5.1.13 sorted
+
+内置的`sorted()`函数可以对list进行排序
+
+`sorted()`函数是一个高阶函数，可以接收一个`key`函数来实现自定义的排序
+
+```
+>>> sorted([36, 5, -12, 9, -21])
+[-21, -12, 5, 9, 36]
+
+按绝对值大小排序：
+>>> sorted([36, 5, -12, 9, -21], key=abs)
+[5, 9, -12, -21, 36]
+key指定的函数将作用于list的每一个元素上，并根据key函数返回的结果进行排序。
+
+>>> sorted(['bob', 'about', 'Zoo', 'Credit'])
+['Credit', 'Zoo', 'about', 'bob']
+默认情况下，对字符串排序，是按照ASCII的大小比较的，由于'Z' < 'a'，结果，大写字母Z会排在小写字母a的前面。
+
+忽略大小写，按照字母序排序
+>>> sorted(['bob', 'about', 'Zoo', 'Credit'], key=str.lower)
+['about', 'bob', 'Credit', 'Zoo']
+
+进行反向排序，不必改动key函数，可以传入第三个参数reverse=True：
+>>> sorted(['bob', 'about', 'Zoo', 'Credit'], key=str.lower, reverse=True)
+['Zoo', 'Credit', 'bob', 'about']
+
+
+# -*- coding: utf-8 -*-
+L = [('Bob', 75), ('Adam', 92), ('Bart', 66), ('Lisa', 88)]
+def by_name(t):
+    return t[0].lower()
+L2 = sorted(L, key=by_name)
+print(L2)
+
+def by_score(t):
+    return -t[1]
+L2 = sorted(L, key=by_score)
+print(L2)
+```
+
+
+
+## 5.2 返回函数
+
+高阶函数除了可以接受函数作为参数外，还可以把函数作为结果值返回。
+
+
+
+```
+def calc_sum(*args):
+    ax = 0
+    for n in args:
+        ax = ax + n
+    return ax
+    
+def lazy_sum(*args):
+    def sum():
+        ax = 0
+        for n in args:
+            ax = ax + n
+        return ax
+    return sum
+    
+>>> f = lazy_sum(1, 3, 5, 7, 9)
+>>> f
+<function lazy_sum.<locals>.sum at 0x101c6ed90>    
+>>> f()
+25
+相关参数和变量都保存在返回的函数中，这种称为 闭包（Closure）
+
+>>> f1 = lazy_sum(1, 3, 5, 7, 9)
+>>> f2 = lazy_sum(1, 3, 5, 7, 9)
+>>> f1==f2
+False
+
+def count():
+    fs = []
+    for i in range(1, 4):
+        def f():
+             return i*i
+        fs.append(f)
+    return fs
+f1, f2, f3 = count()
+>>> f1()
+9
+>>> f2()
+9
+>>> f3()
+9
+返回的函数引用了变量i，但它并非立刻执行。等到3个函数都返回时，它们所引用的变量i已经变成了3，因此最终结果为9。
+
+返回闭包时牢记一点：返回函数不要引用任何循环变量，或者后续会发生变化的变量。
+返回一个函数时，牢记该函数并未执行，返回函数中不要引用任何可能会变化的变量。
+
+如果一定要引用循环变量怎么办？方法是再创建一个函数，用该函数的参数绑定循环变量当前的值，无论该循环变量后续如何更改，已绑定到函数参数的值不变：
+def count():
+    def f(j):
+        def g():
+            return j*j
+        return g
+    fs = []
+    for i in range(1, 4):
+        fs.append(f(i)) # f(i)立刻被执行，因此i的当前值被传入f()
+    return fs
+再看看结果：
+>>> f1, f2, f3 = count()
+>>> f1()
+1
+>>> f2()
+4
+>>> f3()
+9
+
+利用闭包返回一个计数器函数，每次调用它返回递增整数：
+def createCounter():
+    res = [0]
+    def counter():
+        res[0] = res[0] + 1
+        return res[0]
+    return counter
+```
+
+
+
+## 5.3 匿名函数
+
+在Python中，对匿名函数提供了有限支持。只有一些简单的情况下可以使用匿名函数。
+
+```
+>>> list(map(lambda x: x * x, [1, 2, 3, 4, 5, 6, 7, 8, 9]))
+[1, 4, 9, 16, 25, 36, 49, 64, 81]
+
+匿名函数lambda x: x * x实际上就是：
+def f(x):
+    return x * x
+    
+关键字lambda表示匿名函数，冒号前面的x表示函数参数。
+匿名函数有个限制，就是只能有一个表达式，不用写return，返回值就是该表达式的结果。    
+
+用匿名函数有个好处，因为函数没有名字，不必担心函数名冲突。
+此外，匿名函数也是一个函数对象，也可以把匿名函数赋值给一个变量，再利用变量来调用该函数：
+>>> f = lambda x: x * x
+>>> f
+<function <lambda> at 0x101c6ef28>
+>>> f(5)
+25
+
+同样，也可以把匿名函数作为返回值返回，比如：
+def build(x, y):
+    return lambda: x * x + y * y
+    
+def is_odd(n):
+    return n % 2 == 1
+L = list(filter(is_odd, range(1, 20)))
+L = list(filter(lambda x:x%2 ==1, range(1, 20)))
+```
+
+
+
+## 5.4 装饰器
+
+在代码运行期间动态增加功能的方式，称之为“装饰器”（Decorator）。
+
+本质上，decorator就是一个返回函数的高阶函数。
+
+
+
+在面向对象（OOP）的设计模式中，decorator被称为装饰模式。OOP的装饰模式需要通过继承和组合来实现，而Python除了能支持OOP的decorator外，直接从语法层次支持decorator。Python的decorator可以用函数实现，也可以用类实现。
+
+decorator可以增强函数的功能，定义起来虽然有点复杂，但使用起来非常灵活和方便。
+
+
+
+```
+>>> def now():
+...     print('2015-3-25')
+...
+>>> f = now
+>>> f()
+2015-3-25
+
+def log(func):
+    def wrapper(*args, **kw):
+        print('call %s():' % func.__name__)
+        return func(*args, **kw)
+    return wrapper
+
+借助Python的@语法，把decorator置于函数的定义处：
+@log
+def now():
+    print('2015-3-25')
+
+把@log放到now()函数的定义处，相当于执行了语句：
+now = log(now)
+
+如果decorator本身需要传入参数，那就需要编写一个返回decorator的高阶函数，写出来会更复杂。比如，要自定义log的文本：
+def log(text):
+    def decorator(func):
+        def wrapper(*args, **kw):
+            print('%s %s():' % (text, func.__name__))
+            return func(*args, **kw)
+        return wrapper
+    return decorator
+
+@log('execute')
+def now():
+    print('2015-3-25')
+    
+相当于
+>>> now = log('execute')(now)
+
+Python内置的functools.wraps
+import functools
+def log(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kw):
+        print('call %s():' % func.__name__)
+        return func(*args, **kw)
+    return wrapper
+    
+或者针对带参数的decorator：
+import functools
+def log(text):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kw):
+            print('%s %s():' % (text, func.__name__))
+            return func(*args, **kw)
+        return wrapper
+    return decorator
+
+实现方法执行耗时打印
+def metric(fn):
+    @functools.wraps(fn)
+    def wrapper(*args, **kw):
+        start = time.time()
+        res = fn(*args, **kw)
+        print('%s executed in %s ms' % (fn.__name__, time.time()-start))
+        return res
+    return wrapper
+
+# 测试
+@metric
+def fast(x, y):
+    time.sleep(0.0012)
+    return x + y;    
+
+from functools import wraps
+def Round(n):
+    return lambda func: wraps(func)(lambda *args, **kw: round(func(*args, **kw), n))
+```
+
+
+
+```
+# -*- coding: utf-8 -*-
+import functools
+
+def log(para):
+    if isinstance(para, str):
+        def decorator(fn):
+            @functools.wraps(fn)
+            def wrapper(*args, **kw):
+                print('%s call ' % para, wrapper.__name__)
+                return fn(*args, **kw)
+            return wrapper
+        return decorator
+    else:
+        @functools.wraps(para)
+        def wrapper(*args, **kw):
+            print('call ', wrapper.__name__)
+            return para(*args, **kw)
+        return wrapper
+
+@log('just')
+def abc():
+    print('abc')
+    return 0
+
+@log
+def cba():
+    print('cba')
+    return 0
+
+abc()
+cba()
+```
+
+## 5. 5 偏函数
+
+通过设定参数的默认值，可以降低函数调用的难度。而偏函数也可以做到这一点。
+
+**创建偏函数时，实际上可以接收函数对象、`*args`和`**kw`这3个参数**
+
+当函数的参数个数太多，需要简化时，使用`functools.partial`可以创建一个新的函数，这个新函数可以固定住原函数的部分参数，从而在调用时更简单。
+
+
+
+```
+int()函数可以把字符串转换为整数，当仅传入字符串时，int()函数默认按十进制转换：
+>>> int('12345')
+12345
+
+int()函数还提供额外的base参数，默认值为10。如果传入base参数，就可以做N进制的转换：
+>>> int('12345', base=8)
+5349
+>>> int('12345', 16)
+74565
+
+可以定义一个int2()的函数，默认把base=2传进去：
+def int2(x, base=2):
+    return int(x, base)
+    
+>>> import functools
+>>> int2 = functools.partial(int, base=2)
+>>> int2('1000000')
+64
+>>> int2('1010101')
+85
+
+functools.partial的作用就是，把一个函数的某些参数给固定住（也就是设置默认值），返回一个新的函数，调用这个新函数会更简单。
+
+>>> int2('1000000', base=10)
+1000000
+
+int2 = functools.partial(int, base=2)
+实际上固定了int()函数的关键字参数base，也就是：
+int2('10010')
+相当于：
+kw = { 'base': 2 }
+int('10010', **kw)
+
+max2 = functools.partial(max, 10)
+实际上会把10作为*args的一部分自动加到左边，也就是：
+max2(5, 6, 7)
+相当于：
+args = (10, 5, 6, 7)
+max(*args)
+结果为10。
+
+
+```
+
+
 
 
 
